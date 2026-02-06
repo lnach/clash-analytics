@@ -1,3 +1,13 @@
+"""
+Clash of Clans Data Loading Module
+
+Handles loading extracted data into PostgreSQL database.
+Inserts member and snapshot data with proper error handling.
+
+Author: Luke Nachnani
+Date: 2026-02-06
+"""
+
 import psycopg2
 import os
 from dotenv import load_dotenv
@@ -25,7 +35,16 @@ def get_db_connection():
         return None
     
 def load_members(conn, members_data):
-    """Load member data into PostgreSQL database"""
+    """
+    Load member data into PostgreSQL database
+    
+    Args:
+        conn: connection to PostgreSQL database
+        members_data: member data extracted from API
+
+    Returns: None; loads data to PostgreSQL database
+    
+    """
 
     cursor = conn.cursor()
     
@@ -46,6 +65,7 @@ def load_members(conn, members_data):
             cursor.execute(insert_sql, values)
         
         conn.commit()
+        print(f"Successfully loaded {len(members_data)} members into database")
         
     except psycopg2.Error as e:
         print(f"Error loading members: {e}")
@@ -53,10 +73,19 @@ def load_members(conn, members_data):
         
     finally:
         cursor.close()
-        print(f" Successfully loaded {len(members_data)} members into database")
 
-def load_snapshot(conn, snapshot_data, snapshot_date):
-    """Load snapshot data into PostgreSQL database"""
+def load_snapshots(conn, snapshot_data, snapshot_date):
+    """
+    Load snapshot data into PostgreSQL database
+    
+    Args:
+        conn: connection to PostgreSQL database
+        snapshot_data: snapshot data extracted from API
+        snapshot_date: date that load_snapshot is ran and snapshot data is loaded
+
+    Returns: None; loads data to PostgreSQL database
+    
+    """
 
     cursor = conn.cursor()
 
@@ -77,11 +106,12 @@ def load_snapshot(conn, snapshot_data, snapshot_date):
                 snapshot['town_hall_level'],
                 snapshot['donations_given'],
                 snapshot['donations_received'],
-                snapshot['clan_rank'],
+                snapshot['clan_rank']
             )
             cursor.execute(insert_sql, values)
         
         conn.commit()
+        print(f"Successfully loaded {len(snapshot_data)} snapshots into database")
         
     except psycopg2.Error as e:
         print(f"Error loading snapshots: {e}")
@@ -93,31 +123,28 @@ def load_snapshot(conn, snapshot_data, snapshot_date):
 
 
 if __name__ == "__main__":
-    # Test loading members
     from extract import extract_all_member_data
     
-    print("Starting test...")
-    
+    print("Starting data load...")
+        
     # Get data from API
     data = extract_all_member_data()
-    
     if not data:
         print("Failed to extract data")
         exit(1)
-    
+        
     # Get database connection
     conn = get_db_connection()
-    
     if not conn:
         print("Failed to connect to database")
         exit(1)
     
-    print("Connection successful!")
+    # Load data into database
+    load_members(conn, data['members'])
+    load_snapshots(conn, data['snapshots'], data['snapshot_date'])
     
-    # Test loading just members
-    load_snapshot(conn, data['snapshots'], data['snapshot_date'])
     
     # Close connection
     conn.close()
     
-    print("\nTest complete!")
+    print("\nData load complete!")
